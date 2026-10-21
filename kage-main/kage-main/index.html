@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANSHU — Student Portfolio & WebGL Journey</title>
+  <meta name="description" content="Cinematic WebGL portfolio experience for Anshu — Student, Developer, and Creator.">
+  
+  <style>
+    /* ==========================================================================
+       RESET & TYPOGRAPHY
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-dark: #05070c;
+      --text-bone: #e6e4df;
+      --text-muted: #8a8d93;
+      --vermilion: #e0231c;
+      --amber-warm: #ffaa44;
+      --moon-blue: #a3c2e0;
+      --line-subtle: rgba(230, 228, 223, 0.12);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-serif: "Georgia", "Times New Roman", serif;
+      --font-jp: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
+    }
+
+    html {
+      background-color: var(--bg-dark);
+      color: var(--text-bone);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+
+    body {
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    @media (pointer: fine) {
+      body {
+        cursor: none;
+      }
+    }
+
+    /* Precision Pointer */
+    #cursor-dot {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 6px;
+      height: 6px;
+      background-color: var(--vermilion);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease-out;
+    }
+
+    #cursor-ring {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 32px;
+      height: 32px;
+      border: 1px solid rgba(224, 35, 28, 0.5);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.2s ease-out;
+    }
+
+    /* Fullscreen Fixed WebGL Canvas Container */
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    canvas#webgl {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Foreground Procedural Canvas */
+    #fg-canvas {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 35vh;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       CENTERED HEADER & MUSIC CONTROLS
+       ========================================================================== */
+    header.site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 2rem 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      pointer-events: auto;
+      background: linear-gradient(to bottom, rgba(5,7,12,0.85), transparent);
+    }
+
+    .brand-logo-container {
+      text-align: center;
+    }
+
+    .brand-logo {
+      font-size: 2.5rem;
+      font-family: var(--font-serif);
+      font-weight: 400;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--text-bone);
+      text-decoration: none;
+      display: block;
+      margin-left: 0.45em; /* Optical center fix */
+    }
+
+    .brand-subtitle {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      color: var(--vermilion);
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+
+    .audio-control-bar {
+      margin-top: 0.8rem;
+    }
+
+    .music-btn {
+      background: rgba(224, 35, 28, 0.2);
+      border: 1px solid var(--vermilion);
+      color: var(--text-bone);
+      padding: 0.4rem 1.1rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .music-btn:hover {
+      background: var(--vermilion);
+      transform: scale(1.05);
+    }
+
+    /* ==========================================================================
+       CHAPTER RAIL & SECTIONS
+       ========================================================================== */
+    .chapter-rail {
+      position: fixed;
+      right: 3rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .rail-node {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      transition: color 0.3s;
+    }
+
+    .rail-node .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--text-muted);
+      transition: transform 0.3s, background-color 0.3s;
+    }
+
+    .rail-node.active {
+      color: var(--text-bone);
+    }
+
+    .rail-node.active .dot {
+      background-color: var(--vermilion);
+      transform: scale(1.6);
+    }
+
+    main.experience-wrapper {
+      position: relative;
+      z-index: 10;
+    }
+
+    section.chapter {
+      min-height: 125vh;
+      padding: 24vh 10vw 15vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .vertical-jp {
+      position: absolute;
+      right: 12vw;
+      top: 25vh;
+      writing-mode: vertical-rl;
+      font-family: var(--font-jp);
+      font-size: 4.5rem;
+      letter-spacing: 0.4em;
+      color: rgba(230, 228, 223, 0.08);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .meta-tag {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--vermilion);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .meta-tag::before {
+      content: "";
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background-color: var(--vermilion);
+    }
+
+    h1.chapter-title, h2.chapter-title {
+      font-family: var(--font-serif);
+      font-size: clamp(2.5rem, 5.5vw, 4.8rem);
+      font-weight: 300;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      max-width: 22ch;
+      margin-bottom: 2rem;
+      color: var(--text-bone);
+    }
+
+    .word-span {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .chapter.in-view .word-span {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .chapter-body {
+      max-width: 38ch;
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      font-weight: 300;
+      line-height: 1.8;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s;
+    }
+
+    .chapter.in-view .chapter-body {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Cards */
+    .editorial-card {
+      width: 100%;
+      max-width: 440px;
+      border: 1px solid var(--line-subtle);
+      background: rgba(5, 7, 12, 0.75);
+      backdrop-filter: blur(8px);
+      padding: 1.25rem;
+      margin-top: 1rem;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s ease 0.5s, transform 0.8s ease 0.5s;
+    }
+
+    .chapter.in-view .editorial-card {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card-media {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/10;
+      background-color: #0d121c;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .card-media canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .play-trigger {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(224, 35, 28, 0.85);
+      border: none;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.3s, background-color 0.3s;
+    }
+
+    .play-trigger:hover {
+      transform: translate(-50%, -50%) scale(1.1);
+      background: var(--vermilion);
+    }
+
+    .card-caption {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Footer */
+    footer.manifesto-footer {
+      min-height: 70vh;
+      padding: 15vh 10vw 8vh;
+      border-top: 1px solid var(--line-subtle);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+      background: linear-gradient(to bottom, transparent, var(--bg-dark));
+    }
+
+    .manifesto-title {
+      font-family: var(--font-serif);
+      font-size: 2.2rem;
+      font-weight: 300;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-top: 4rem;
+      border-top: 1px solid var(--line-subtle);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 844px) {
+      header.site-header {
+        padding: 1.2rem 1rem;
+      }
+      .brand-logo {
+        font-size: 1.8rem;
+      }
+      .chapter-rail {
+        right: 1rem;
+      }
+      .rail-node span {
+        display: none;
+      }
+      section.chapter {
+        padding: 22vh 6vw 10vh;
+      }
+      .vertical-jp {
+        font-size: 3rem;
+        right: 4vw;
+        top: 18vh;
+      }
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <div id="canvas-container">
+    <canvas id="webgl"></canvas>
+  </div>
+
+  <canvas id="fg-canvas"></canvas>
+
+  <!-- CENTERED BRAND HEADER -->
+  <header class="site-header">
+    <div class="brand-logo-container">
+      <a href="#chapter-1" class="brand-logo">ANSHU</a>
+      <div class="brand-subtitle">Student • Developer • WebGL Portfolio</div>
+    </div>
+    <div class="audio-control-bar">
+      <button id="toggle-music" class="music-btn">♫ Play Ambient Music</button>
+    </div>
+  </header>
+
+  <!-- CHAPTER RAIL -->
+  <nav class="chapter-rail" aria-label="Portfolio Chapters">
+    <a href="#chapter-1" class="rail-node active" data-chapter="1">
+      <span class="dot"></span>
+      <span>01 Student</span>
+    </a>
+    <a href="#chapter-2" class="rail-node" data-chapter="2">
+      <span class="dot"></span>
+      <span>02 Skills</span>
+    </a>
+    <a href="#chapter-3" class="rail-node" data-chapter="3">
+      <span class="dot"></span>
+      <span>03 Projects</span>
+    </a>
+    <a href="#chapter-4" class="rail-node" data-chapter="4">
+      <span class="dot"></span>
+      <span>04 Leadership</span>
+    </a>
+    <a href="#chapter-5" class="rail-node" data-chapter="5">
+      <span class="dot"></span>
+      <span>05 Vision</span>
+    </a>
+  </nav>
+
+  <main class="experience-wrapper">
+
+    <!-- CHAPTER 1: STUDENT PROFILE -->
+    <section id="chapter-1" class="chapter in-view" data-index="1">
+      <div class="vertical-jp">学徒専心</div>
+      <div class="meta-tag">Chapter 01 — Education</div>
+      <h1 class="chapter-title">
+        Academic Pursuit & Fundamentals
+      </h1>
+      <p class="chapter-body">
+        Currently pursuing my degree as a computer science student. Dedicated to mastering algorithms, data structures, and computer graphics while maintaining a high academic standing.
+      </p>
+      <div class="editorial-card">
+        <div class="card-media">
+          <canvas id="card-canvas-1"></canvas>
+          <button class="play-trigger" onclick="playTone(261.63)" aria-label="Play Note">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor">
+              <path d="M0 0L14 8L0 16V0Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="card-caption">
+          <span>Feature 01 — Student Journey</span>
+          <span>B.S. Computer Science</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAPTER 2: SKILLS & TOOLKIT -->
+    <section id="chapter-2" class="chapter" data-index="2">
+      <div class="vertical-jp">技術創生</div>
+      <div class="meta-tag">Chapter 02 — Stack & Tools</div>
+      <h2 class="chapter-title">
+        Software Craft & Graphics
+      </h2>
+      <p class="chapter-body">
+        Specializing in modern WebGL, Three.js, React, JavaScript/TypeScript, and high-performance Web development. Building fluid interactive engines and clean APIs.
+      </p>
+      <div class="editorial-card">
+        <div class="card-media">
+          <canvas id="card-canvas-2"></canvas>
+          <button class="play-trigger" onclick="playTone(329.63)" aria-label="Play Note">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor">
+              <path d="M0 0L14 8L0 16V0Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="card-caption">
+          <span>Feature 02 — Technical Skills</span>
+          <span>Three.js / React / Node</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAPTER 3: FEATURED PROJECTS -->
+    <section id="chapter-3" class="chapter" data-index="3">
+      <div class="vertical-jp">作品結集</div>
+      <div class="meta-tag">Chapter 03 — Builds</div>
+      <h2 class="chapter-title">
+        Featured Projects & Explorations
+      </h2>
+      <p class="chapter-body">
+        Created full-stack Web applications, real-time 3D shaders, open-source utilities, and interactive web audio experiments designed for high visual fidelity.
+      </p>
+      <div class="editorial-card">
+        <div class="card-media">
+          <canvas id="card-canvas-3"></canvas>
+          <button class="play-trigger" onclick="playTone(392.00)" aria-label="Play Note">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor">
+              <path d="M0 0L14 8L0 16V0Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="card-caption">
+          <span>Feature 03 — Featured Works</span>
+          <span>Interactive Demos & Code</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAPTER 4: LEADERSHIP & ACTIVITIES -->
+    <section id="chapter-4" class="chapter" data-index="4">
+      <div class="vertical-jp">統率指針</div>
+      <div class="meta-tag">Chapter 04 — Activities</div>
+      <h2 class="chapter-title">
+        Leadership & Campus Life
+      </h2>
+      <p class="chapter-body">
+        Active participant in tech clubs, hackathons, and student coding workshops. Passionate about collaborating with peers and mentoring fellow students in web technologies.
+      </p>
+      <div class="editorial-card">
+        <div class="card-media">
+          <canvas id="card-canvas-4"></canvas>
+          <button class="play-trigger" onclick="playTone(523.25)" aria-label="Play Note">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor">
+              <path d="M0 0L14 8L0 16V0Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="card-caption">
+          <span>Feature 04 — Hackathons & Clubs</span>
+          <span>Team Lead & Contributor</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAPTER 5: VISION & CONTACT -->
+    <section id="chapter-5" class="chapter" data-index="5">
+      <div class="vertical-jp">未来展望</div>
+      <div class="meta-tag">Chapter 05 — Contact</div>
+      <h2 class="chapter-title">
+        Looking Forward
+      </h2>
+      <p class="chapter-body">
+        Seeking software engineering opportunities, internships, and collaborative research projects in graphics and web technology.
+      </p>
+      <div class="editorial-card">
+        <div class="card-media">
+          <canvas id="card-canvas-5"></canvas>
+          <button class="play-trigger" onclick="playTone(659.25)" aria-label="Play Note">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor">
+              <path d="M0 0L14 8L0 16V0Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="card-caption">
+          <span>Feature 05 — Get In Touch</span>
+          <span>Open for Opportunities</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="manifesto-footer">
+    <div>
+      <div class="meta-tag">Portfolio Statement</div>
+      <h3 class="manifesto-title">Crafting meaningful software through continuous learning.</h3>
+      <p style="color: var(--text-muted); font-weight: 300; max-width: 500px;">
+        Designed and engineered by Anshu. Built using Three.js WebGL procedural scenes, Web Audio API, and custom motion design.
+      </p>
+    </div>
+    <div class="footer-bottom">
+      <div>© ANSHU PORTFOLIO. ALL RIGHTS RESERVED.</div>
+      <div>STUDENT & DEVELOPER</div>
+    </div>
+  </footer>
+
+  <script>
+    // Split Headings for Word Reveal
+    document.querySelectorAll('.chapter-title').forEach(title => {
+      const words = title.innerText.trim().split(' ');
+      title.innerHTML = words.map(w => `<span class="word-span">${w}&nbsp;</span>`).join('');
+    });
+
+    /* ==========================================================================
+       1. WEB AUDIO MUSIC ENGINE
+       ========================================================================== */
+    let audioCtx = null;
+    let isMusicPlaying = false;
+    let ambientOsc1, ambientOsc2, gainNode;
+
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function toggleMusic() {
+      initAudio();
+      const btn = document.getElementById('toggle-music');
+
+      if (!isMusicPlaying) {
+        audioCtx.resume();
+        
+        ambientOsc1 = audioCtx.createOscillator();
+        ambientOsc1.type = 'sine';
+        ambientOsc1.frequency.setValueAtTime(110, audioCtx.currentTime); // A2
+
+        ambientOsc2 = audioCtx.createOscillator();
+        ambientOsc2.type = 'triangle';
+        ambientOsc2.frequency.setValueAtTime(164.81, audioCtx.currentTime); // E3
+
+        gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
+        ambientOsc1.connect(gainNode);
+        ambientOsc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        ambientOsc1.start();
+        ambientOsc2.start();
+
+        btn.innerText = "❚❚ Pause Music";
+        btn.style.background = "var(--vermilion)";
+        isMusicPlaying = true;
+      } else {
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+        setTimeout(() => {
+          ambientOsc1.stop();
+          ambientOsc2.stop();
+        }, 500);
+        btn.innerText = "♫ Play Ambient Music";
+        btn.style.background = "rgba(224, 35, 28, 0.2)";
+        isMusicPlaying = false;
+      }
+    }
+
+    document.getElementById('toggle-music').addEventListener('click', toggleMusic);
+
+    function playTone(freq) {
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const osc = audioCtx.createOscillator();
+      const noteGain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+      noteGain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      noteGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+
+      osc.connect(noteGain);
+      noteGain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.2);
+    }
+
+    /* ==========================================================================
+       2. CURSOR FOLLOW
+       ========================================================================== */
+    const dot = document.getElementById('cursor-dot');
+    const ring = document.getElementById('cursor-ring');
+    let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+    let ringX = mouseX, ringY = mouseY;
+
+    if (window.matchMedia('(pointer: fine)').matches) {
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        dot.style.left = `${mouseX}px`;
+        dot.style.top = `${mouseY}px`;
+      });
+
+      function animateCursor() {
+        ringX += (mouseX - ringX) * 0.15;
+        ringY += (mouseY - ringY) * 0.15;
+        ring.style.left = `${ringX}px`;
+        ring.style.top = `${ringY}px`;
+        requestAnimationFrame(animateCursor);
+      }
+      animateCursor();
+    } else {
+      dot.style.display = 'none';
+      ring.style.display = 'none';
+    }
+
+    /* ==========================================================================
+       3. THREE.JS PROCEDURAL 3D BACKGROUND
+       ========================================================================== */
+    const canvas = document.getElementById('webgl');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x05070c);
+    scene.fog = new THREE.FogExp2(0x05070c, 0.03);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 2, 10);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x2a3650, 0.9);
+    scene.add(ambientLight);
+
+    const moonLight = new THREE.DirectionalLight(0xa3c2e0, 1.5);
+    moonLight.position.set(-10, 20, -10);
+    scene.add(moonLight);
+
+    const lanternLight = new THREE.PointLight(0xffaa44, 3.5, 20);
+    lanternLight.position.set(2, 2, -5);
+    scene.add(lanternLight);
+
+    // Glowing Vermilion Moon
+    const moonGeo = new THREE.SphereGeometry(3.8, 32, 32);
+    const moonMat = new THREE.MeshBasicMaterial({ color: 0xe0231c });
+    const moon = new THREE.Mesh(moonGeo, moonMat);
+    moon.position.set(7, 11, -22);
+    scene.add(moon);
+
+    // Mountain Terrain
+    const terrainGeo = new THREE.PlaneGeometry(60, 80, 32, 32);
+    const pos = terrainGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      pos.setZ(i, Math.sin(x * 0.2) * Math.cos(y * 0.2) * 1.8);
+    }
+    terrainGeo.computeVertexNormals();
+    const terrainMat = new THREE.MeshStandardMaterial({ color: 0x111622, roughness: 0.85 });
+    const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+    terrain.rotation.x = -Math.PI / 2;
+    terrain.position.y = -1;
+    scene.add(terrain);
+
+    // Torii Gate Structure
+    const toriiGroup = new THREE.Group();
+    const vermilionMat = new THREE.MeshStandardMaterial({ color: 0xcc1f18, roughness: 0.4 });
+    const pillarGeo = new THREE.CylinderGeometry(0.25, 0.3, 6, 16);
+    
+    const p1 = new THREE.Mesh(pillarGeo, vermilionMat);
+    p1.position.set(-2.5, 3, 0);
+    const p2 = p1.clone();
+    p2.position.set(2.5, 3, 0);
+
+    const topLintel = new THREE.Mesh(new THREE.BoxGeometry(7, 0.4, 0.5), vermilionMat);
+    topLintel.position.set(0, 5.8, 0);
+
+    toriiGroup.add(p1, p2, topLintel);
+    toriiGroup.position.set(0, 0, -2);
+    scene.add(toriiGroup);
+
+    // Particle Embers
+    const particleCount = 600;
+    const particleGeo = new THREE.BufferGeometry();
+    const posArray = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      posArray[i] = (Math.random() - 0.5) * 30;
+      posArray[i + 1] = Math.random() * 20;
+      posArray[i + 2] = (Math.random() - 0.5) * 40;
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const particles = new THREE.Points(particleGeo, new THREE.PointsMaterial({ color: 0xffaa44, size: 0.08, transparent: true, opacity: 0.7 }));
+    scene.add(particles);
+
+    // Scroll Camera Waypoints
+    const cameraWaypoints = [
+      { pos: [0, 2, 8], rot: [0, 0, 0] },
+      { pos: [1.5, 3.5, 0], rot: [-0.1, 0.2, 0] },
+      { pos: [-1, 2, -7], rot: [0, -0.3, 0] },
+      { pos: [0, 1.8, -14], rot: [0.1, 0, 0] },
+      { pos: [0, 4, -22], rot: [-0.2, 0, 0] }
+    ];
+
+    let scrollProgress = 0, targetProgress = 0;
+    window.addEventListener('scroll', () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      targetProgress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+    });
+
+    // Foreground Silhouettes
+    const fgCanvas = document.getElementById('fg-canvas');
+    const fgCtx = fgCanvas.getContext('2d');
+    function resizeFgCanvas() {
+      fgCanvas.width = window.innerWidth;
+      fgCanvas.height = window.innerHeight * 0.35;
+    }
+    resizeFgCanvas();
+    window.addEventListener('resize', resizeFgCanvas);
+
+    function drawForeground() {
+      fgCtx.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
+      fgCtx.fillStyle = '#05070c';
+      fgCtx.beginPath();
+      fgCtx.moveTo(0, fgCanvas.height);
+      for (let x = 0; x <= fgCanvas.width; x += 15) {
+        const gh = 30 + Math.sin(x * 0.04) * 15;
+        fgCtx.lineTo(x, fgCanvas.height - gh);
+      }
+      fgCtx.lineTo(fgCanvas.width, fgCanvas.height);
+      fgCtx.closePath();
+      fgCtx.fill();
+    }
+
+    // Card Graphic Canvases
+    function drawCardCanvas(canvasId, chapterNumber) {
+      const c = document.getElementById(canvasId);
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      c.width = 400;
+      c.height = 250;
+      ctx.fillStyle = '#0d121c';
+      ctx.fillRect(0, 0, 400, 250);
+
+      ctx.strokeStyle = '#e0231c';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x < 400; x += 10) {
+        const y = 125 + Math.sin(x * 0.04 + chapterNumber) * 25;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    for (let i = 1; i <= 5; i++) drawCardCanvas(`card-canvas-${i}`, i);
+
+    // Scroll Observer
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          const idx = parseInt(entry.target.getAttribute('data-index'));
+          document.querySelectorAll('.rail-node').forEach(node => {
+            node.classList.toggle('active', parseInt(node.getAttribute('data-chapter')) === idx);
+          });
+          drawForeground();
+        }
+      });
+    }, { threshold: 0.4 });
+
+    document.querySelectorAll('section.chapter').forEach(s => observer.observe(s));
+
+    // Render Animation Loop
+    const clock = new THREE.Clock();
+    function render() {
+      requestAnimationFrame(render);
+      const elapsedTime = clock.getElapsedTime();
+
+      scrollProgress += (targetProgress - scrollProgress) * 0.05;
+
+      const scaledProgress = scrollProgress * (cameraWaypoints.length - 1);
+      const index = Math.min(Math.floor(scaledProgress), cameraWaypoints.length - 2);
+      const segmentProgress = scaledProgress - index;
+
+      const wp1 = cameraWaypoints[index];
+      const wp2 = cameraWaypoints[index + 1] || wp1;
+
+      camera.position.x = THREE.MathUtils.lerp(wp1.pos[0], wp2.pos[0], segmentProgress);
+      camera.position.y = THREE.MathUtils.lerp(wp1.pos[1], wp2.pos[1], segmentProgress);
+      camera.position.z = THREE.MathUtils.lerp(wp1.pos[2], wp2.pos[2], segmentProgress);
+
+      // Animate lantern glow & float
+      lanternLight.intensity = 3.0 + Math.sin(elapsedTime * 3) * 0.5;
+      moon.position.y = 11 + Math.sin(elapsedTime * 0.5) * 0.3;
+
+      // Animate Particles
+      const positions = particles.geometry.attributes.position.array;
+      for (let i = 1; i < particleCount * 3; i += 3) {
+        positions[i] -= 0.03;
+        if (positions[i] < -2) positions[i] = 18;
+      }
+      particles.geometry.attributes.position.needsUpdate = true;
+
+      renderer.render(scene, camera);
+    }
+
+    render();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
